@@ -1,0 +1,119 @@
+import { createContext, useEffect, useState } from 'react'
+import { abi } from '../constants'
+
+export const BContext = createContext()
+
+export const BProvider = ({ children }) => {
+  const [appStatus, setAppStatus] = useState('')
+  const [currentAccount, setCurrentAccount] = useState('')
+  const [currentUser, setCurrentUser] = useState({})
+
+  const briskAddress = "0x46e835Bc224b11da2a0eCbfE2cd8ef04D7B64873"
+
+  useEffect(() => {
+    checkIfWalletIsConnected()
+  }, [])
+
+
+  const checkIfWalletIsConnected = async () => {
+    if (!window.ethereum) return setAppStatus('noMetaMask')
+    try {
+      const addressArray = await window.ethereum.request({
+        method: 'eth_accounts',
+      })
+      if (addressArray.length > 0) {
+        setAppStatus('connected')
+        setCurrentAccount(addressArray[0])
+      } else {
+        // if (!me) {
+        //   router.push('/')
+        // }
+
+        setAppStatus('notConnected')
+      }
+    } catch (err) {
+      // if (!me) {
+      //   router.push('/')
+      // }
+      setAppStatus('error')
+    }
+  }
+
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      alert("Please Install MetaMask")
+      return
+    }
+    try {
+      setAppStatus('loading')
+
+      const addressArray = await window.ethereum.request({
+        method: 'eth_requestAccounts',
+      })
+
+      if (addressArray.length > 0) {
+        setCurrentAccount(addressArray[0])
+
+        if (window.ethereum) {
+          const currentChainId = await window.ethereum.request({
+            method: 'eth_chainId',
+          });
+
+          // return true if network id is the same
+          if (currentChainId != "80001") {
+            alert("Switch To Mumbai Testnet")
+          }
+        }
+
+      } else {
+
+        setAppStatus('notConnected')
+      }
+    } catch (err) {
+      setAppStatus('error')
+    }
+  }
+
+  // const updateUIValues = async () => {
+  //   const provider = new ethers.providers.Web3Provider(window.ethereum)
+  //   const xtelptContract = new ethers.Contract(briskAddress, abi, provider)
+
+  //   try {
+  //     const addressArray = await window.ethereum.request({
+  //       method: 'eth_accounts',
+  //     })
+  //     if (addressArray.length > 0) {
+  //       let prof = await xtelptContract.getProfile(`${addressArray[0]}`)
+  //       setMe(prof)
+  //       // console.log(me)
+  //     } else {
+  //       console.log("no metamask")
+  //     }
+  //   } catch (err) {
+  //     console.log("an error occured")
+  //   }
+
+  // }
+
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     updateUIValues()
+  //   }, 300);
+  // }, [currentAccount])
+
+
+  return (
+    <BContext.Provider
+      value={{
+        appStatus,
+        currentAccount,
+        connectWallet,
+        setAppStatus,
+        briskAddress,
+        abi,
+      }}
+    >
+      {children}
+    </BContext.Provider>
+  )
+}
